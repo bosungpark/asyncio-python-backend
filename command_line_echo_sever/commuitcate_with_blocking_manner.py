@@ -7,12 +7,15 @@ cmd: telnet localhost 8000
 
 example: "hihi" + enter
 
-expected: 
+expected in sever console: 
 i got a connection from ('127.0.0.1', 53534)!!!!!
 i got data: b'hi'!
 i got data: b'hi'!
 i got data: b'\r\n'!
 All data i got: b'hihi\r\n'
+
+expected returned value in client console: 
+hihi
 """
 import socket
 
@@ -24,18 +27,20 @@ server_socket.bind(server_address)
 server_socket.listen()
 
 try:
-    connection, client_address= server_socket.accept()
-    print(f"i got a connection from {client_address}!!!!!")
+    while True:
+        connection, client_address= server_socket.accept()
+        print(f"i got a connection from {client_address}!!!!!")
 
-    buffer=b""
+        buffer=b""
 
-    while buffer[-2:] != b"\r\n":
-        data= connection.recv(2)
-        if not data:
-            break
-        else:
-            print(f"i got data: {data}!")
-            buffer+=data
-    print(f"All data i got: {buffer}")
+        while buffer[-2:] != b"\r\n":
+            data= connection.recv(2)
+            if not data:
+                break
+            else:
+                print(f"i got data: {data}!")
+                buffer+=data
+        print(f"All data i got: {buffer}")
+        connection.sendall(buffer)
 finally:
     server_socket.close()
