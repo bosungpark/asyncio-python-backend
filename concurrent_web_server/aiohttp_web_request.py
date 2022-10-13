@@ -1,3 +1,12 @@
+"""
+expected:
+
+starting <function main at 0x10219dcf0> with args () {}
+starting <function fetch_status at 0x100d58160> with args (<aiohttp.client.ClientSession object at 0x102126cb0>, 'http://www.example.com') {}
+finished <function fetch_status at 0x100d58160> in 0.9863 second(s)
+status for http://www.example.com was 200 # -> printed
+finished <function main at 0x10219dcf0> in 0.9869 second(s)
+"""
 import asyncio
 
 import aiohttp
