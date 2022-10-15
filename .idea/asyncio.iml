@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/command_line_echo_sever" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/concurrent_web_server" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/util" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/non_blocking_database_drivers" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.10 (asyncio)" jdkType="Python SDK" />
