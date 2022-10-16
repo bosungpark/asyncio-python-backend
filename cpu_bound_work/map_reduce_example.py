@@ -1,35 +1,63 @@
-from functools import reduce
-from typing import Dict
+import asyncio
+import functools
+import time
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
+from typing import List, Dict
 
 
-def map_frequency(text: str) -> Dict[str, int]:
-    words = text.split(' ')
+def partitoin(data: List,
+              chunk_size: int) -> List:
+    for i in range(0, len(data), chunk_size):
+        yield data[i:i + chunk_size]
+
+def map_fiequencies(chunk: List[str]) -> Dict[str,int]:
     freq = {}
-    for w in words:
-        if w in freq:
-            freq[w]+=1
+    for line in chunk:
+        word, _, cnt, _= line.split("\t")
+        if word in freq:
+            freq[word]+=int(cnt)
         else:
-            freq[w]=1
+            freq[word]=int(cnt)
     return freq
 
-def merge_dicts(first: Dict[str,int],
-                second: Dict[str,int]) -> Dict[str,int]:
-    merged = first
+def merge_dicts(first: Dict[str, int],
+                second: Dict[str,int]) -> Dict[str, int]:
+    merge = first
     for key in second:
-        if key in merged:
-            merged[key]+=second[key]
+        if key in merge:
+            merge[key]+=second[key]
         else:
-            merged[key] = second[key]
-    return merged
+            merge[key]=second[key]
+    return merge
 
-lines = ["i knew what i know",
-         "i knew what i don't know",
-         "i knew what i know much",
-         "i knew what i don't know much"]
+async def reduce(loop, pool, counter, chunk_size) -> Dict[str,int]:
+    chunks:List[List[Dict]] = list(partitoin(counter, chunk_size))
+    reducers=[]
+    while len(chunks[0])>1:
+        for chunk in chunks:
+            reducer = partial(functools.reduce, merge_dicts, chunk)
+            reducers.append(loop.run_in_executor(pool, reducer))
+        reducer_chunk = await asyncio.gather(*reducers)
+        chunks = list(partitoin(reducer_chunk, chunk_size))
+        reducers.clear()
+    return chunks[0][0]
 
-mapped_results = [map_frequency(line) for line in lines]
+async def main(partition_size: int):
+    with open("googlebooks-eng-all-1gram-20120701-a.txt", encoding="utf-8") as f:
+        lines = f.readlines()
+        loop = asyncio.get_running_loop()
+        tasks = []
+        start = time.time()
+        with ProcessPoolExecutor() as pool:
+            for chunk in partitoin(lines, partition_size):
+                tasks.append(loop.run_in_executor(pool, partial(map_fiequencies, chunk)))
 
-for result in mapped_results:
-    print(result)
+            intermediate_results = await asyncio.gather(*tasks)
+            final_result = await reduce(loop, pool, intermediate_results, 500)
+            print(f"Aardvark={final_result['Aardvark']}")
+            end = time.time()
+            print(f"{end-start:.4f}")
 
-print(f"fin= {reduce(merge_dicts,mapped_results)}")
+if __name__ == '__main__':
+    asyncio.run(main(partition_size=60000))
