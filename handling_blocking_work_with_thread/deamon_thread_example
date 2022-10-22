@@ -1,0 +1,45 @@
+"""
+cmd: telnet localhost 8000
+"""
+from _socket import SO_REUSEADDR, SHUT_RDWR, SOL_SOCKET
+from socket import socket, AF_INET, SOCK_STREAM
+from threading import Thread
+
+
+
+class ClientEchoThread(Thread):
+    def __init__(self, client):
+        super().__init__()
+        self.client : socket =client
+
+    def run(self):
+        try:
+            while True:
+                data = self.client.recv(2048)
+                if not data:
+                    raise BrokenPipeError("conn close!")
+                print(f'received {data}, sending!')
+                self.client.sendall(data)
+        except OSError as e:
+            print(e)
+
+    def close(self):
+        if self.isAlive():
+            self.client.sendall(bytes("shutting down", "utf-8"))
+            self.client.shutdown(SHUT_RDWR)
+
+
+with socket(AF_INET, SOCK_STREAM) as sever:
+    sever.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+    sever.bind(('127.0.0.1', 8000))
+    sever.listen()
+    connection_thread=[]
+    try:
+        while True:
+            conn, _=sever.accept()
+            thread = ClientEchoThread(conn)
+            connection_thread.append(thread)
+            thread.start()
+    except KeyboardInterrupt:
+        print("shut down!")
+        [thread.close() for thread in connection_thread]
