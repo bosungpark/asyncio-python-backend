@@ -1,0 +1,22 @@
+import asyncio
+import functools
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
+
+from util import async_timed
+
+
+def  get_status_code(url: str) -> int:
+    res = requests.get(url)
+    return res.status_code
+
+@async_timed()
+async def main():
+    loop= asyncio.get_running_loop()
+    urls = ["https://www.example.com" for _ in range(1000)]
+    tasks = [asyncio.to_thread(get_status_code, url) for url in urls]
+    results =await asyncio.gather(*tasks)
+    print(results)
+
+asyncio.run(main())
